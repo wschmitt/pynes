@@ -1,0 +1,59 @@
+LINKS EMULATOR:
+
+bisqwit source code
+https://bisqwit.iki.fi/jutut/kuvat/programming_examples/nesemu1/
+
+another source code
+https://github.com/fogleman/nes/tree/master/nes
+
+opcodes:
+https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
+http://www.oxyron.de/html/opcodes02.html
+http://www.6502.org/tutorials/6502opcodes.html#CLD
+http://6502.org/tutorials/65c816opcodes.html
+
+https://www.romhacking.net/
+
+nes asm
+https://patater.com/nes-asm-tutorials/
+https://en.wikibooks.org/wiki/6502_Assembly
+
+.Nes file format:
+http://fms.komkon.org/EMUL8/NES.html#LABC
+https://wiki.nesdev.com/w/index.php/INES
+http://nesdev.com/neshdr20.txt
+
+Banks
+https://forums.nesdev.com/viewtopic.php?f=10&t=15701
+
+Mapper
+http://wiki.nesdev.com/w/index.php/Mapper
+games list: http://tuxnes.sourceforge.net/nesmapper.txt
+
+
+General
+https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe
+
+javax
+https://github.com/OneLoneCoder/olcNES/blob/master/Part%232%20-%20CPU/olc6502.h
+https://github.com/OneLoneCoder/olcNES/blob/master/Part%232%20-%20CPU/olc6502.cpp
+http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf
+
+pytq4
+https://stackoverflow.com/questions/46466796/how-to-install-pyqt4-on-windows
+
+
+wxpython + pyOpengl:
+https://www.youtube.com/watch?v=Tec61nEAz4s&list=PL1P11yPQAo7oOmiQQI35arzpVez6AxrDj&index=6
+
+
+more 6502
+http://www.obelisk.me.uk/6502/reference.html
+http://www.6502.org/tutorials/6502opcodes.html#BPL
+https://www.chibiakumas.com/6502/
+
+-------Compile
+https://www.masswerk.at/6502/assembler.html
+https://tomeko.net/online_tools/hex_to_file.php?lang=en
+http://www.6502.org/source/sorting/bubble8.htm
+http://www.6502.org/source/
