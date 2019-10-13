@@ -77,27 +77,27 @@ class CPU:
 
     # reg accessors - easy way to read/write from/to registers
     def regA(self, val=None):
-        if val:
+        if val is not None:
             self.regs[Reg.A] = val
         return self.regs[Reg.A]
 
     def regX(self, val=None):
-        if val:
+        if val is not None:
             self.regs[Reg.X] = val
         return self.regs[Reg.X]
 
     def regY(self, val=None):
-        if val:
+        if val is not None:
             self.regs[Reg.Y] = val
         return self.regs[Reg.Y]
 
     def regP(self, val=None):
-        if val:
+        if val is not None:
             self.regs[Reg.P] = val
         return self.regs[Reg.P]
 
     def regPC(self, val=None):
-        if val:
+        if val is not None:
             self.regs[Reg.PC] = val
         return self.regs[Reg.PC]
 
@@ -264,7 +264,8 @@ def AND(cpu: CPU, addr_abs: int, mode):
 # Function: A = C <- (A << 1) <- 0
 # Flags: N, Z, C
 def ASL(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs) << 1
+    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
+    value <<= 1
     cpu.set_flag(Flag.C, value > 0xFF)
     cpu.set_flag(Flag.Z, (value & 0x00FF) == 0x00)
     cpu.set_flag(Flag.N, value & 0x80)
@@ -566,7 +567,7 @@ def LDY(cpu: CPU, addr_abs: int, mode):
 # Function: A = C <- (A >> 1) <- 0
 # Flags: N, Z, C
 def LSR(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
     cpu.set_flag(Flag.C, value & 0x0001)
     temp = value >> 1
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -632,7 +633,8 @@ def PLP(cpu: CPU, addr_abs: int, mode):
 # Function:
 # Flags: N, Z, C
 def ROL(cpu: CPU, addr_abs: int, mode):
-    value = (cpu.read_mem(addr_abs) << 1) | cpu.get_flag(Flag.C)
+    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
+    value = (value << 1) | cpu.get_flag(Flag.C)
     cpu.set_flag(Flag.C, value & 0xFF00)
     cpu.set_flag(Flag.Z, (value & 0x00FF) == 0x0000)
     cpu.set_flag(Flag.N, value & 0x0080)
@@ -647,7 +649,7 @@ def ROL(cpu: CPU, addr_abs: int, mode):
 # Function:
 # Flags: N, Z, C
 def ROR(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
     temp = (cpu.get_flag(Flag.C) << 7) | (value >> 1)
     cpu.set_flag(Flag.C, value & 0x01)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
