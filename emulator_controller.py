@@ -51,7 +51,7 @@ class EmuController:
         self.view.ram.DeleteAllItems()
         start_addr = self.ram_page * self.ram_page_size
         for addr in range(0, 0x100):
-            val = self.emu.ram.get(start_addr + addr)
+            val = self.emu.ram.cpu_read(start_addr + addr)
             self.view.ram.InsertItem(addr, ('$%02x' % addr).upper())
             self.view.ram.SetItem(addr, 1, '$%02x' % val)
 
@@ -62,7 +62,7 @@ class EmuController:
         while True:
             i += 1
             self.__lookup_instr_table[pc] = i
-            addr = self.emu.rom.get(pc)
+            addr = self.emu.rom.cpu_read(pc)
             if not addr:
                 break
             elif addr not in opcodes:
@@ -80,7 +80,7 @@ class EmuController:
                 self.view.code.SetItem(i, 4, "Imp")
                 pc += 1
             elif instr.size == 2:
-                mem = self.emu.rom.get(pc + 1)
+                mem = self.emu.rom.cpu_read(pc + 1)
                 if instr.mode == cpu.imm:
                     self.view.code.SetItem(i, 2, ("#$%02x" % mem).upper())
                     self.view.code.SetItem(i, 4, "Imm")

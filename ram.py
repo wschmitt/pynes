@@ -4,11 +4,11 @@ class RAM:
         self.mod_mask = size - 1    # 2047
         self.ram = bytearray(size)
 
-    def set(self, addr: int, val: int):
+    def cpu_write(self, addr: int, val: int):
         self.ram[addr & self.mod_mask] = val
         return val
 
-    def get(self, addr: int):
+    def cpu_read(self, addr: int):
         return self.ram[addr & self.mod_mask]
 
     def get_word(self, addr):  # 2 bytes

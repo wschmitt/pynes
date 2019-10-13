@@ -3,9 +3,9 @@ import wx
 from wx import glcanvas
 from OpenGL.GL import *
 import OpenGL.GL.shaders
-import numpy
+import numpy as np
 
-vertex_shader = """
+vertex_shader2 = """
 # version 330
 in layout(location = 0) vec3 positions;
 in layout(location = 1) vec3 colors;
@@ -18,7 +18,7 @@ void main() {
 }
 """
 
-fragment_shader = """
+fragment_shader2 = """
 # version 330
 
 in vec3 newColor;
@@ -29,14 +29,52 @@ void main() {
 }
 """
 
+vertex_shader = """# version 400
+layout(location=0) in vec2 position;
+layout(location=1) in vec2 texCoords;
+out vec2 TexCoords;
+void main()
+{
+    gl_Position = vec4(position.x, position.y, 0.0f, 1.0f);
+    TexCoords = texCoords;
+}
+"""
+
+fragment_shader = """# version 400
+in vec2 TexCoords;
+out vec4 color;
+uniform sampler2D screenTexture;
+void main()
+{
+    vec3 sampled = vec4(texture(screenTexture, TexCoords)).xyz; // original rendered pixel color value
+    //color = vec4(TexCoords.x, TexCoords.y, 0., 1.); // to see whether I placed quad correctly
+    //color = vec4(sampled, 1.0); // original
+    color = vec4(1.0 - sampled, 1.0); // processed (inverted)
+}
+"""
+
+
+# Utility functions
+def float_size(n=1):
+    return sizeof(ctypes.c_float) * n
+
+
+def pointer_offset(n=0):
+    return ctypes.c_void_p(float_size(n))
+
 
 class OpenGLCanvas(glcanvas.GLCanvas):
     def __init__(self, parent):
-        glcanvas.GLCanvas.__init__(self, parent, -1, size=(640, 480), pos=(4, 4))
+        # the nes resolution is 256 x 240 - we are making it 2.5x bigger
+        glcanvas.GLCanvas.__init__(self, parent, -1, size=(640, 600), pos=(4, 4))
         self.init = False
+        self.screen_quad_vao = 0
+        self.shader = None
         self.context = glcanvas.GLContext(self)
         self.SetCurrent(self.context)
         glClearColor(0.1, 0.15, 0.1, 1.0)
+
+        self.tex = np.random.randint(256, size=(256, 240, 3))
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnResize)
@@ -48,28 +86,63 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         glViewport(0, 0, size.width, size.height)
 
     def InitGL(self):
-        # vertices/colors
-        triangle = [-0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
-                    0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.5, 0.0, 0.0, 0.0, 1.0]
-        triangle = numpy.array(triangle, dtype=numpy.float32)
-        shader = OpenGL.GL.shaders.compileProgram(
+        # positions / tex coords
+        quad = np.array([-1, 1, 0, 1,
+                         -1, -1, 0, 0,
+                         1, -1, 1, 0,
+                         -1, 1, 0, 1,
+                         1, -1, 1, 0,
+                         1, 1, 1, 1], dtype=np.float32)
+
+        self.shader = OpenGL.GL.shaders.compileProgram(
             OpenGL.GL.shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
             OpenGL.GL.shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
 
-        vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(triangle) * 4, triangle, GL_STATIC_DRAW)
+        self.screen_quad_vao = GLuint()
+        glGenVertexArrays(1, self.screen_quad_vao)
+        glBindVertexArray(self.screen_quad_vao)
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
+        quad_vbo = GLuint()
+        glGenBuffers(1, quad_vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, quad_vbo)
+        glBufferData(GL_ARRAY_BUFFER, quad, GL_STATIC_DRAW)
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, float_size(4), pointer_offset(0))
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, float_size(4), pointer_offset(2))
         glEnableVertexAttribArray(0)
-
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
         glEnableVertexAttribArray(1)
+
+        # self.create_screen_texture()
 
         glClearColor(0.1, 0.15, 0.1, 1.0)
 
-        glUseProgram(shader)
+        # glUseProgram(shader)
+
+    def draw_quad(self):
+        # Framebuffer to render offscreen
+        fbo = GLuint()
+        glGenFramebuffers(1, fbo)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+
+        texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, self.tex)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0)
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glClearColor(1, 0, 0, 1)
+        glClear(GL_COLOR_BUFFER_BIT)
+        glDisable(GL_DEPTH_TEST)
+
+        glBindVertexArray(self.screen_quad_vao)
+        glUseProgram(self.shader)
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glDrawArrays(GL_TRIANGLES, 0, 6)
+
+        glBindTexture(GL_TEXTURE_2D, 0)
+        glBindVertexArray(0)
 
     def OnPaint(self, event):
         if not self.init:
@@ -78,7 +151,8 @@ class OpenGLCanvas(glcanvas.GLCanvas):
 
     def OnDraw(self):
         glClear(GL_COLOR_BUFFER_BIT)
-        glDrawArrays(GL_TRIANGLES, 0, 3)
+        self.draw_quad()
+        # glDrawArrays(GL_TRIANGLES, 0, 6)
         self.SwapBuffers()
 
 

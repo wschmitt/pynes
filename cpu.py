@@ -22,8 +22,12 @@ class Flag(Enum):
     N = (1 << 7)  # Negative flag
 
 
+# It can address 16-bit through a Bus to communicate with other hardware
+# RAM - 0x0000 - 0x1FFF
+# PPU - 0x2000 - 0x3FFF
+# ROM - 0x4000 - 0xFFFF (handled by the cartridge)
 class CPU:
-    def __init__(self, get_mem, set_mem):
+    def __init__(self, cpu_read_func, cpu_write_func):
         self.regs = {Reg.A: 0x00, Reg.X: 0x00, Reg.Y: 0x00, Reg.P: 0x0, Reg.PC: 0xC000}
 
         self.processing = True
@@ -32,9 +36,9 @@ class CPU:
         self.cycles = 0  # the number of cycles needed to finish executing the current instruction
         self.stack_pt = 0xFD  # stack Pointer (points to location on bus)
 
-        # functions to read/write from/to memory
-        self.get_mem_func = get_mem
-        self.set_mem_func = set_mem
+        # functions to read/write from/to devices connected to the bus
+        self.cpu_read_func = cpu_read_func
+        self.cpu_write_func = cpu_write_func
 
     def process_instr(self, instr):
         self.cycles = instr.cycles
@@ -56,11 +60,11 @@ class CPU:
     def inc_pc(self, val=1):
         self.regs[Reg.PC] += val
 
-    def read_mem(self, addr, byte=1):
-        return self.get_mem_func(addr, byte)
+    def read(self, addr, byte=1):
+        return self.cpu_read_func(addr, byte)
 
-    def write_mem(self, addr, val):
-        return self.set_mem_func(addr, val)
+    def write(self, addr, val):
+        return self.cpu_write_func(addr, val)
 
     def __str__(self):
         return 'A={} X={} Y={} P={} PC={}'.format(self.regA(), self.regX(), self.regY(), bin(self.regP())[2:].zfill(8),
@@ -116,22 +120,22 @@ def imm(cpu: CPU):
 
 # Zero Page Mode:
 def zp0(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC()) & 0x00FF
+    addr = cpu.read(cpu.regPC()) & 0x00FF
     return 0, addr
 
 
 def zpx(cpu: CPU):
-    addr = (cpu.read_mem(cpu.regPC()) + cpu.regX()) & 0x00FF
+    addr = (cpu.read(cpu.regPC()) + cpu.regX()) & 0x00FF
     return 0, addr
 
 
 def zpy(cpu: CPU):
-    addr = (cpu.read_mem(cpu.regPC()) + cpu.regY()) & 0x00FF
+    addr = (cpu.read(cpu.regPC()) + cpu.regY()) & 0x00FF
     return 0, addr
 
 
 def rel(cpu: CPU):
-    addr_rel = cpu.read_mem(cpu.regPC())
+    addr_rel = cpu.read(cpu.regPC())
     if addr_rel & 0x80:
         # calculate the 2's complement
         addr_rel = addr_rel - 0x100
@@ -140,12 +144,12 @@ def rel(cpu: CPU):
 
 # Absolute: Full 16-bit address
 def abs(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC(), 2)
+    addr = cpu.read(cpu.regPC(), 2)
     return 0, addr
 
 
 def abx(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC(), 2)
+    addr = cpu.read(cpu.regPC(), 2)
     addr_x = addr + cpu.regX()
     if addr_x & 0xFF00 != addr & 0xFF00:
         return 1, addr_x
@@ -153,7 +157,7 @@ def abx(cpu: CPU):
 
 
 def aby(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC(), 2)
+    addr = cpu.read(cpu.regPC(), 2)
     addr_y = addr + cpu.regY()
     if addr_y & 0xFF0 != addr & 0xFF00:
         return 1, addr_y
@@ -161,23 +165,23 @@ def aby(cpu: CPU):
 
 
 def ind(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC(), 2)
+    addr = cpu.read(cpu.regPC(), 2)
 
     if (addr & 0x00FF) == 0x00FF:  # simulate page boundary hardware bug
-        return 0, cpu.read_mem(addr & 0xFF00) << 8 | cpu.read_mem(addr)
+        return 0, cpu.read(addr & 0xFF00) << 8 | cpu.read(addr)
     else:
-        return 0, cpu.read_mem(addr, 2)
+        return 0, cpu.read(addr, 2)
 
 
 def idx(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC())
-    return 0, cpu.read_mem(addr + cpu.regX(), 2)
+    addr = cpu.read(cpu.regPC())
+    return 0, cpu.read(addr + cpu.regX(), 2)
 
 
 def idy(cpu: CPU):
-    addr = cpu.read_mem(cpu.regPC())
+    addr = cpu.read(cpu.regPC())
 
-    addr_y = cpu.read_mem(addr, 2)
+    addr_y = cpu.read(addr, 2)
     addr_y += cpu.regY()
 
     if addr_y & 0xFF00 != addr & 0xFF00:
@@ -189,7 +193,7 @@ def idy(cpu: CPU):
 # INSTRUCTIONS =====================================>
 
 def ADC(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     temp = cpu.regA() + value + cpu.get_flag(Flag.C)
     cpu.set_flag(Flag.C, temp > 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -204,7 +208,7 @@ def ADC(cpu: CPU, addr_abs: int, mode):
 
 def SBC(cpu: CPU, addr_abs: int, mode):
     # invert the bottom 8 bits with bitwise xor
-    value = cpu.read_mem(addr_abs) ^ 0x00FF
+    value = cpu.read(addr_abs) ^ 0x00FF
     temp = cpu.regA() + value + cpu.get_flag(Flag.C)
     cpu.set_flag(Flag.C, temp > 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -253,7 +257,7 @@ def CLV(cpu: CPU, addr_abs: int, mode):
 # Function A = A & M
 # Set Flags: N, Z
 def AND(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     cpu.regs[Reg.A] = cpu.regA() & value
     cpu.set_flag(Flag.Z, cpu.regA() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regA() & 0x80))
@@ -264,7 +268,7 @@ def AND(cpu: CPU, addr_abs: int, mode):
 # Function: A = C <- (A << 1) <- 0
 # Flags: N, Z, C
 def ASL(cpu: CPU, addr_abs: int, mode):
-    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
+    value = cpu.regA() if mode == imp else cpu.read(addr_abs)
     value <<= 1
     cpu.set_flag(Flag.C, value > 0xFF)
     cpu.set_flag(Flag.Z, (value & 0x00FF) == 0x00)
@@ -272,7 +276,7 @@ def ASL(cpu: CPU, addr_abs: int, mode):
     if mode == imp:
         cpu.regA(value & 0x00FF)
     else:
-        cpu.write_mem(addr_abs, value & 0x00FF)
+        cpu.write(addr_abs, value & 0x00FF)
     return 0
 
 
@@ -321,7 +325,7 @@ def BEQ(cpu: CPU, addr_rel: int, mode):
 # Instruction:
 # Function:
 def BIT(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     value_processed = cpu.regA() & value
     cpu.set_flag(Flag.Z, (value_processed & 0x00FF) == 0x00)
     cpu.set_flag(Flag.N, value & Flag.N.value)
@@ -403,7 +407,7 @@ def BVS(cpu: CPU, addr_rel: int, mode):
 # Function: C <- A >= M     Z <- (A - M) == 0
 # Flags: N, C, Z
 def CMP(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     temp = cpu.regA() - value
     cpu.set_flag(Flag.C, cpu.regA() >= value)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -415,7 +419,7 @@ def CMP(cpu: CPU, addr_abs: int, mode):
 # Function: C <- X >= M     Z <- (X - M) == 0
 # Flags: N, C, Z
 def CPX(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     temp = cpu.regX() - value
     cpu.set_flag(Flag.C, cpu.regX() >= value)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -427,7 +431,7 @@ def CPX(cpu: CPU, addr_abs: int, mode):
 # Function: C <- Y >= M     Z <- (Y - M) == 0
 # Flags: N, C, Z
 def CPY(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     temp = cpu.regY() - value
     cpu.set_flag(Flag.C, cpu.regY() >= value)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -439,9 +443,9 @@ def CPY(cpu: CPU, addr_abs: int, mode):
 # Function: M = M - 1
 # Flags: N, Z
 def DEC(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     temp = value - 1
-    cpu.write_mem(addr_abs, temp & 0x00FF)
+    cpu.write(addr_abs, temp & 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
     cpu.set_flag(Flag.N, temp & 0x0080)
     return 0
@@ -471,7 +475,7 @@ def DEY(cpu: CPU, addr_abs: int, mode):
 # Function: A = A xor M
 # Flags: N, Z
 def EOR(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     cpu.regs[Reg.A] ^= value
     cpu.set_flag(Flag.Z, cpu.regA() == 0x0)
     cpu.set_flag(Flag.N, bool(cpu.regA() & 0x80))
@@ -482,9 +486,9 @@ def EOR(cpu: CPU, addr_abs: int, mode):
 # Function: M = M + 1
 # Flags: N, Z
 def INC(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     temp = value + 1
-    cpu.write_mem(addr_abs, temp & 0x00FF)
+    cpu.write(addr_abs, temp & 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
     cpu.set_flag(Flag.N, bool(temp & 0x0080))
     return 0
@@ -521,9 +525,9 @@ def JMP(cpu: CPU, addr_abs: int, mode):
 # Function: Push current pc to stack, pc = addr
 def JSR(cpu: CPU, addr_abs: int, mode):
     cpu.inc_pc(-1)
-    cpu.write_mem(0x0100 + cpu.stack_pt, (cpu.regPC() >> 8) & 0x00FF)
+    cpu.write(0x0100 + cpu.stack_pt, (cpu.regPC() >> 8) & 0x00FF)
     cpu.stack_pt -= 1
-    cpu.write_mem(0x0100 + cpu.stack_pt, cpu.regPC() & 0x00FF)
+    cpu.write(0x0100 + cpu.stack_pt, cpu.regPC() & 0x00FF)
     cpu.stack_pt -= 1
 
     cpu.regPC(addr_abs)
@@ -534,7 +538,7 @@ def JSR(cpu: CPU, addr_abs: int, mode):
 # Function: A = M
 # Flags: N, Z
 def LDA(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     cpu.regA(value)
     cpu.set_flag(Flag.Z, cpu.regA() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regA() & 0x80))
@@ -545,7 +549,7 @@ def LDA(cpu: CPU, addr_abs: int, mode):
 # Function: X = M
 # Flags: N, Z
 def LDX(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     cpu.regX(value)
     cpu.set_flag(Flag.Z, cpu.regX() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regX() & 0x80))
@@ -556,7 +560,7 @@ def LDX(cpu: CPU, addr_abs: int, mode):
 # Function: Y = M
 # Flags: N, Z
 def LDY(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     cpu.regY(value)
     cpu.set_flag(Flag.Z, cpu.regY() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regY() & 0x80))
@@ -567,7 +571,7 @@ def LDY(cpu: CPU, addr_abs: int, mode):
 # Function: A = C <- (A >> 1) <- 0
 # Flags: N, Z, C
 def LSR(cpu: CPU, addr_abs: int, mode):
-    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
+    value = cpu.regA() if mode == imp else cpu.read(addr_abs)
     cpu.set_flag(Flag.C, value & 0x0001)
     temp = value >> 1
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -575,7 +579,7 @@ def LSR(cpu: CPU, addr_abs: int, mode):
     if mode == imp:
         cpu.regA(temp & 0x00FF)
     else:
-        cpu.write_mem(addr_abs, temp & 0x00FF)
+        cpu.write(addr_abs, temp & 0x00FF)
     return 0
 
 
@@ -583,7 +587,7 @@ def LSR(cpu: CPU, addr_abs: int, mode):
 # Function: A = A | M
 # Flags: N, Z
 def ORA(cpu: CPU, addr_abs: int, mode):
-    value = cpu.read_mem(addr_abs)
+    value = cpu.read(addr_abs)
     cpu.regs[Reg.A] |= value
     cpu.set_flag(Flag.Z, cpu.regA() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regA() & 0x80))
@@ -593,7 +597,7 @@ def ORA(cpu: CPU, addr_abs: int, mode):
 # Instruction: Push Accumulator to Stack
 # Function: A -> stack
 def PHA(cpu: CPU, addr_abs: int, mode):
-    cpu.write_mem(0x0100 + cpu.stack_pt, cpu.regA())
+    cpu.write(0x0100 + cpu.stack_pt, cpu.regA())
     cpu.stack_pt -= 1
     return 0
 
@@ -603,7 +607,7 @@ def PHA(cpu: CPU, addr_abs: int, mode):
 # Flags: N, Z
 def PHP(cpu: CPU, addr_abs: int, mode):
     cpu.stack_pt += 1
-    cpu.regA(cpu.read_mem(0x0100 + cpu.stack_pt))
+    cpu.regA(cpu.read(0x0100 + cpu.stack_pt))
     cpu.set_flag(Flag.Z, cpu.regA() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regA() & 0x80))
     return 0
@@ -614,7 +618,7 @@ def PHP(cpu: CPU, addr_abs: int, mode):
 # Flags: N, Z
 def PLA(cpu: CPU, addr_abs: int, mode):
     cpu.stack_pt += 1
-    cpu.regA(cpu.read_mem(0x0100 + cpu.stack_pt))
+    cpu.regA(cpu.read(0x0100 + cpu.stack_pt))
     cpu.set_flag(Flag.Z, cpu.regA() == 0x00)
     cpu.set_flag(Flag.N, bool(cpu.regA() & 0x80))
     return 0
@@ -624,7 +628,7 @@ def PLA(cpu: CPU, addr_abs: int, mode):
 # Function: Status <- stack
 def PLP(cpu: CPU, addr_abs: int, mode):
     cpu.stack_pt += 1
-    cpu.regP = cpu.read_mem(0x0100 + cpu.stack_pt)
+    cpu.regP = cpu.read(0x0100 + cpu.stack_pt)
     cpu.set_flag(Flag.U, True)
     return 0
 
@@ -633,7 +637,7 @@ def PLP(cpu: CPU, addr_abs: int, mode):
 # Function:
 # Flags: N, Z, C
 def ROL(cpu: CPU, addr_abs: int, mode):
-    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
+    value = cpu.regA() if mode == imp else cpu.read(addr_abs)
     value = (value << 1) | cpu.get_flag(Flag.C)
     cpu.set_flag(Flag.C, value & 0xFF00)
     cpu.set_flag(Flag.Z, (value & 0x00FF) == 0x0000)
@@ -641,7 +645,7 @@ def ROL(cpu: CPU, addr_abs: int, mode):
     if mode == imp:
         cpu.regA(value & 0x00FF)
     else:
-        cpu.write_mem(addr_abs, value & 0x00FF)
+        cpu.write(addr_abs, value & 0x00FF)
     return 0
 
 
@@ -649,7 +653,7 @@ def ROL(cpu: CPU, addr_abs: int, mode):
 # Function:
 # Flags: N, Z, C
 def ROR(cpu: CPU, addr_abs: int, mode):
-    value = cpu.regA() if mode == imp else cpu.read_mem(addr_abs)
+    value = cpu.regA() if mode == imp else cpu.read(addr_abs)
     temp = (cpu.get_flag(Flag.C) << 7) | (value >> 1)
     cpu.set_flag(Flag.C, value & 0x01)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
@@ -657,19 +661,19 @@ def ROR(cpu: CPU, addr_abs: int, mode):
     if mode == imp:
         cpu.regA(temp & 0x00FF)
     else:
-        cpu.write_mem(addr_abs, temp & 0x00FF)
+        cpu.write(addr_abs, temp & 0x00FF)
     return 0
 
 
 # Instruction: Return from Interrupt
 def RTI(cpu: CPU, addr_abs: int, mode):
     cpu.stack_pt += 1
-    cpu.regP = cpu.read_mem(0x0100 + cpu.stack_pt)
+    cpu.regP = cpu.read(0x0100 + cpu.stack_pt)
     cpu.regs[Reg.P] &= ~cpu.get_flag(Flag.B)
     cpu.regs[Reg.P] &= ~cpu.get_flag(Flag.U)
 
     cpu.stack_pt += 1
-    cpu.regPC(cpu.read_mem(0x0100 + cpu.stack_pt, 2) + 1)
+    cpu.regPC(cpu.read(0x0100 + cpu.stack_pt, 2) + 1)
     cpu.stack_pt += 1
     return 0
 
@@ -677,7 +681,7 @@ def RTI(cpu: CPU, addr_abs: int, mode):
 # Instruction: Return from Subroutine
 def RTS(cpu: CPU, addr_abs: int, mode):
     cpu.stack_pt += 1
-    cpu.regPC(cpu.read_mem(0x0100 + cpu.stack_pt, 2) + 1)
+    cpu.regPC(cpu.read(0x0100 + cpu.stack_pt, 2) + 1)
     cpu.stack_pt += 1
     return 0
 
@@ -699,21 +703,21 @@ def SEI(cpu: CPU, addr_abs: int, mode):
 # Instruction: Store Accumulator Address
 # Function: M <- A
 def STA(cpu: CPU, addr_abs: int, mode):
-    cpu.write_mem(addr_abs, cpu.regA())
+    cpu.write(addr_abs, cpu.regA())
     return 0
 
 
 # Instruction: Store Accumulator Address
 # Function: M <- X
 def STX(cpu: CPU, addr_abs: int, mode):
-    cpu.write_mem(addr_abs, cpu.regX())
+    cpu.write(addr_abs, cpu.regX())
     return 0
 
 
 # Instruction: Store Accumulator Address
 # Function: M <- Y
 def STY(cpu: CPU, addr_abs: int, mode):
-    cpu.write_mem(addr_abs, cpu.regY())
+    cpu.write(addr_abs, cpu.regY())
     return 0
 
 
@@ -781,17 +785,17 @@ def BRK(cpu: CPU, addr_abs: int, mode):
     cpu.set_flag(Flag.I, True)
 
     pc = cpu.regPC()
-    cpu.write_mem(0x0100 + cpu.stack_pt, (pc >> 8) & 0x00FF)
+    cpu.write(0x0100 + cpu.stack_pt, (pc >> 8) & 0x00FF)
     cpu.stack_pt -= 1
-    cpu.write_mem(0x0100 + cpu.stack_pt, pc & 0x00FF)
+    cpu.write(0x0100 + cpu.stack_pt, pc & 0x00FF)
     cpu.stack_pt -= 1
 
     cpu.set_flag(Flag.B, True)
-    cpu.write_mem(0x0100 + cpu.stack_pt, cpu.regP())
+    cpu.write(0x0100 + cpu.stack_pt, cpu.regP())
     cpu.stack_pt -= 1
     cpu.set_flag(Flag.B, False)
 
-    cpu.regPC(cpu.read_mem(0xFFFE, 2))
+    cpu.regPC(cpu.read(0xFFFE, 2))
     return 0
 
 
