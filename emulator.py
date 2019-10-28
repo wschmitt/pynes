@@ -16,6 +16,7 @@ class Emulator:
 
     def set_rom(self, rom: ROM):
         self.rom = rom
+        self.cpu.reset()
 
     def has_rom(self):
         return self.rom is not None
@@ -55,7 +56,20 @@ class Emulator:
         pass
 
     def ppu_read(self, addr, byte=1):
-        pass
+        addr &= 0x3FFF
+
+        # pattern memory
+        if addr <= 0x1FFF:
+            return self.ppu.tbl_pattern[int(addr >= 0x1000)][addr & 0x0FFF]
+        elif addr <= 0x3EFF:
+            pass
+        # palette memory
+        elif addr <= 0x3FFF:
+            addr &= 0x001F
+            # mirroring
+            if addr == 0x0010 or addr == 0x0014 or addr == 0x0018 or addr == 0x001C:
+                addr -= 0x10
+            return self.ppu.tbl_palette[addr]
 
     def __ppu_memory_access(self, write, addr, value, word=0):
         pass
@@ -75,12 +89,12 @@ class Emulator:
         # RAM ranges from 0x0000 to 0x2000 and uses mirroring each 0x800
         if addr <= 0x1FFF:
             if write:
-                return self.ram.set(addr, value)
+                return self.ram.cpu_write(addr, value)
             else:
                 if word:
                     return self.ram.get_word(addr)  # pop 2 bytes from memory
                 else:
-                    return self.ram.get(addr)  # pop 1 byte from memory
+                    return self.ram.cpu_read(addr)  # pop 1 byte from memory
 
         # PPU Ranges from 0x2000 to 0x3FFF
         elif addr <= 0x3FFF:
@@ -93,4 +107,4 @@ class Emulator:
         if word:
             return self.rom.get_word(addr)
 
-        return self.rom.cpu_read(addr)
+        return self.rom.get(addr)

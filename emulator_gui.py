@@ -49,7 +49,7 @@ void main()
     vec3 sampled = vec4(texture(screenTexture, TexCoords)).xyz; // original rendered pixel color value
     //color = vec4(TexCoords.x, TexCoords.y, 0., 1.); // to see whether I placed quad correctly
     //color = vec4(sampled, 1.0); // original
-    color = vec4(1.0 - sampled, 1.0); // processed (inverted)
+    color = vec4(sampled, 1.0); // processed (inverted)
 }
 """
 
@@ -74,7 +74,8 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         glClearColor(0.1, 0.15, 0.1, 1.0)
 
-        self.tex = np.random.randint(256, size=(256, 240, 3))
+        self.screen_tex = np.random.randint(256, size=(256, 240, 3))
+        print(len(self.screen_tex))
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnResize)
@@ -112,11 +113,7 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         glEnableVertexAttribArray(0)
         glEnableVertexAttribArray(1)
 
-        # self.create_screen_texture()
-
         glClearColor(0.1, 0.15, 0.1, 1.0)
-
-        # glUseProgram(shader)
 
     def draw_quad(self):
         # Framebuffer to render offscreen
@@ -128,7 +125,7 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         glBindTexture(GL_TEXTURE_2D, texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, self.tex)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, self.screen_tex)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0)
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -185,6 +182,11 @@ class EmuPanel(wx.Panel):
         self.execute_instr_btn = wx.Button(self, -1, label="Run Instruction", pos=(960, 390), size=(100, 25))
         self.load_rom = wx.Button(self, -1, label="Load ROM", pos=(845, 390), size=(100, 25))
         self.reset = wx.Button(self, -1, label="Reset Program", pos=(660, 390), size=(100, 25))
+
+        # other buttons
+        self.draw_pattern_table_checkbox = wx.CheckBox(self, -1, label="Draw CHR Table", pos=(660, 430), size=(400, 20))
+        self.draw_pattern_table_checkbox.SetBackgroundColour(wx.Colour(140, 150, 155))
+        self.draw_pattern_table_checkbox.SetValue(False)
 
         # registers
         self.cpu_registers = wx.StaticText(self, -1, label="", pos=(660, 10), size=(400, 15),

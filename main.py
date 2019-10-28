@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import emulator
-import rom as Rom
 
 from emulator_controller import EmuController
 from emulator_gui import EmuApp

@@ -17,7 +17,7 @@ instr_len = {
 
 
 class Instr(object):
-    def __init__(self, mnem : str, mode, instr, cycles, size, extra_cycle=False):
+    def __init__(self, mnem: str, mode, instr, cycles, size, extra_cycle=False):
         self.mnem = mnem
         self.size = size
         self.mode = mode
@@ -194,7 +194,6 @@ opcodes = {
     0xf0: Instr("BEQ", cpu.rel, cpu.BEQ, 2, 2, True),
 }
 
-
 # opcodes_table = [
 #     # Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA
 #     ["ADC", 0x69, 0x65, 0x75, None, 0x6d, 0x7d, 0x79, None, 0x61, 0x71, None, None],
@@ -255,4 +254,3 @@ opcodes = {
 #     ["STY", None, 0x84, 0x94, None, 0x8c, None, None, None, None, None, None, None],
 #     ["---", None, None, None, None, None, None, None, None, None, None, None, None]
 # ]
-

@@ -10,8 +10,9 @@ class ROM:
         self.prg_code_addr = 0xC000
         if is_nes:
             self.header = self.__read_header()
+            print('pgr banks', self.header["pgr_banks_16k"])
             self.pgr_rom = bytearray(self.rom.read(0x4000 * bytes_to_int(self.header["pgr_banks_16k"])))
-            print(self.header["mapper_lower"], self.header["mapper_higher"])
+            self.chr_rom = bytearray(self.rom.read(0x2000 * bytes_to_int(self.header["chr_8kb"])))
         else:
             self.pgr_rom = bytearray(self.rom.read())
 
@@ -20,7 +21,7 @@ class ROM:
         return {
             "constant": bytearray(header[0:4]),
             "pgr_banks_16k": bytearray([header[4]]),
-            "vrom_banks_8kb": bytearray([header[5]]),
+            "chr_8kb": bytearray([header[5]]),
             "h_or_v_mirror_flag": bytearray(get_bits(header[6], 0)),
             "battery_ram": bytearray(get_bits(header[6], 1)),
             "trainer_512": bytearray(get_bits(header[6], 2)),
@@ -38,12 +39,11 @@ class ROM:
         return len(self.pgr_rom)
 
     def get(self, addr: int):
-        addr = addr - self.prg_code_addr
-        return self.pgr_rom[addr] if 0 <= addr < len(self.pgr_rom) else None
+        return self.pgr_rom[addr & 0x3FFF]
 
     def get_word(self, addr):  # 2 bytes
-        addr -= self.prg_code_addr
-        return int.from_bytes(self.pgr_rom[addr:addr + 1], "little") if 0 <= addr < len(self.pgr_rom) - 1 else None
+        addr = addr & 0x3FFF
+        return int.from_bytes(self.pgr_rom[addr:(addr + 2)], "little")
 
     def __build_rom_banks(self):
         # print("BANK 1 START ADDRESS: ", hex(16384*3))

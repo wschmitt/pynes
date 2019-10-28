@@ -1,3 +1,4 @@
+import numpy as np
 import wx
 
 import cpu
@@ -11,6 +12,7 @@ class EmuController:
     def __init__(self, emu: Emulator, emu_gui: EmuPanel):
         self.emu = emu
         self.view = emu_gui
+        self.canvas = emu_gui.canvas
 
         self.__lookup_instr_table = {}
         self.ram_page = 0
@@ -26,6 +28,23 @@ class EmuController:
         self.view.Bind(wx.EVT_BUTTON, self.__previous_page_ram, self.view.previous_page_btn)
         self.view.Bind(wx.EVT_BUTTON, self.__execute_instr, self.view.execute_instr_btn)
         self.view.Bind(wx.EVT_BUTTON, self.__open_rom_dialog, self.view.load_rom)
+        self.view.Bind(wx.EVT_CHECKBOX, self.__draw_chr_table, self.view.draw_pattern_table_checkbox)
+
+    def __draw_chr_table(self, evt):
+        if self.view.draw_pattern_table_checkbox.GetValue():
+            for x in range(len(self.canvas.screen_tex)):
+                for y in range(len(self.canvas.screen_tex[x])):
+                    self.canvas.screen_tex[x][y] = [0, 0, 0]
+        else:
+            self.canvas.screen_tex = np.random.randint(256, size=(256, 240, 3))
+
+        self.repaint_canvas()
+
+    def set_canvas_pixel(self, x: int, y: int, color: []):
+        self.canvas.screen_tex[x][y] = color
+
+    def repaint_canvas(self):
+        self.canvas.OnDraw()
 
     # executes the current selected instruction
     def __execute_instr(self, evt):
@@ -57,20 +76,21 @@ class EmuController:
 
     def __refresh_rom(self):
         self.view.clear_code_window()
-        pc = self.emu.cpu.regPC()
+        pc = 0xC000
         i = -1
         while True:
             i += 1
             self.__lookup_instr_table[pc] = i
-            addr = self.emu.rom.cpu_read(pc)
+            addr = self.emu.rom.get(pc)
             if not addr:
                 break
             elif addr not in opcodes:
                 print("opcode not found: ", hex(pc - 0xc000), hex(addr))
                 pc += 1
+                i -= 1
                 continue
             instr = opcodes[addr]
-            print("instr:", instr.mnem)
+            print(i, hex(addr), hex(pc), instr.mnem, instr.size)
             if self.view.code.ItemCount <= i:
                 self.view.code.InsertItem(i, ('$%02x' % pc).upper())
             else:
@@ -80,7 +100,7 @@ class EmuController:
                 self.view.code.SetItem(i, 4, "Imp")
                 pc += 1
             elif instr.size == 2:
-                mem = self.emu.rom.cpu_read(pc + 1)
+                mem = self.emu.rom.get(pc + 1)
                 if instr.mode == cpu.imm:
                     self.view.code.SetItem(i, 2, ("#$%02x" % mem).upper())
                     self.view.code.SetItem(i, 4, "Imm")
@@ -126,7 +146,8 @@ class EmuController:
                     self.view.code.SetItem(i, 4, "Ind")
                 pc += 3
 
-            self.update_instr_selection()
+        self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
+        self.update_instr_selection()
 
     def update_instr_selection(self):
         self.view.code.SetFocus()

@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import IntFlag, IntEnum
 
 
 # CPU registers
-class Reg(Enum):
+class Reg(IntEnum):
     A = 1  # Accumulator Reg
     X = 2  # X Reg
     Y = 3  # Y Reg
@@ -11,7 +11,7 @@ class Reg(Enum):
 
 
 # Status flags
-class Flag(Enum):
+class Flag(IntFlag):
     C = (1 << 0)  # Carry flag
     Z = (1 << 1)  # Zero flag
     I = (1 << 2)  # Disable Interrupt flag
@@ -28,17 +28,22 @@ class Flag(Enum):
 # ROM - 0x4000 - 0xFFFF (handled by the cartridge)
 class CPU:
     def __init__(self, cpu_read_func, cpu_write_func):
-        self.regs = {Reg.A: 0x00, Reg.X: 0x00, Reg.Y: 0x00, Reg.P: 0x0, Reg.PC: 0xC000}
+        self.regs = {Reg.A: 0x00, Reg.X: 0x00, Reg.Y: 0x00, Reg.P: 0x0, Reg.PC: 0xFFFC}
 
         self.processing = True
 
         # auxiliar variables
         self.cycles = 0  # the number of cycles needed to finish executing the current instruction
         self.stack_pt = 0xFD  # stack Pointer (points to location on bus)
+        self.reset_addr = 0xFFFC
 
         # functions to read/write from/to devices connected to the bus
         self.cpu_read_func = cpu_read_func
         self.cpu_write_func = cpu_write_func
+
+    def reset(self):
+        addr = self.cpu_read_func(self.reset_addr, 2)
+        self.regPC(addr)
 
     def process_instr(self, instr):
         self.cycles = instr.cycles
