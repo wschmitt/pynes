@@ -1,4 +1,3 @@
-import numpy as np
 import wx
 
 import cpu
@@ -26,17 +25,33 @@ class EmuController:
     def __setup_events(self):
         self.view.Bind(wx.EVT_BUTTON, self.__next_page_ram, self.view.next_page_btn)
         self.view.Bind(wx.EVT_BUTTON, self.__previous_page_ram, self.view.previous_page_btn)
-        self.view.Bind(wx.EVT_BUTTON, self.__execute_instr, self.view.execute_instr_btn)
+        self.view.Bind(wx.EVT_BUTTON, self.__tick_clock, self.view.tick_clock_btn)
+        self.view.Bind(wx.EVT_BUTTON, self.__execute_frame, self.view.execute_frame_btn)
         self.view.Bind(wx.EVT_BUTTON, self.__open_rom_dialog, self.view.load_rom)
         self.view.Bind(wx.EVT_CHECKBOX, self.__draw_chr_table, self.view.draw_pattern_table_checkbox)
 
     def __draw_chr_table(self, evt):
         if self.view.draw_pattern_table_checkbox.GetValue():
-            for x in range(len(self.canvas.screen_tex)):
-                for y in range(len(self.canvas.screen_tex[x])):
-                    self.canvas.screen_tex[x][y] = [0, 0, 0]
-        else:
-            self.canvas.screen_tex = np.random.randint(256, size=(256, 240, 3))
+            pattern_tbl = self.emu.ppu.get_pattern_table(0, 0)
+            for x in range(256):
+                for y in range(240):
+                    self.canvas.SetPixel(x, y, [0, 0, 0])
+
+            for x in range(0, 128):
+                for y in range(0, 128):
+                    # print(x, y, pattern_tbl[x + 128 * y])
+                    # try:
+                    self.canvas.SetPixel(x, y, pattern_tbl[x + 128 * y])  # pattern_tbl[x + 128 * y]
+                # except:
+                #     continue
+
+            # for x in range(len(self.canvas.screen_tex)):
+            #    for y in range(len(self.canvas.screen_tex[x])):
+            #        color = pattern_tbl[x][y] if x < len(pattern_tbl) and y < len(pattern_tbl[0]) else [255, 255, 255]
+            # color = pattern_tbl[x][y]  # get color from chr pattern in PPU
+            #        self.canvas.screen_tex[x][y] = color
+        # else:
+        # self.canvas.SetTexture(np.random.randint(256, size=(240, 256, 3)))
 
         self.repaint_canvas()
 
@@ -46,15 +61,33 @@ class EmuController:
     def repaint_canvas(self):
         self.canvas.OnDraw()
 
+    def __execute_frame(self, evt):
+        self.canvas.SetPixel(0, 0, [255, 255, 255])
+        self.repaint_canvas()
+        # for i in range(0, 100):
+        #     self.emu.tick_clock()
+        # self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
+        # self.update_instr_selection()
+        # self.__refresh_cpu_registers()
+        # self.__refresh_cpu_flags()
+        # self.__refresh_ram()
+
     # executes the current selected instruction
-    def __execute_instr(self, evt):
-        self.emu.execute_instr()
+    def __tick_clock(self, evt):
+        self.emu.tick_clock()
         # point selection to the next instruction
         self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
+
+        # update UI
         self.update_instr_selection()
         self.__refresh_cpu_registers()
         self.__refresh_cpu_flags()
         self.__refresh_ram()
+        self.__refresh_canvas()
+
+    def __refresh_canvas(self):
+        self.canvas.SetTexture(self.emu.ppu.frameBuffer)
+        self.repaint_canvas()
 
     def __next_page_ram(self, evt):
         self.ram_page = min(self.ram_page + 1, self.ram_page_size - 1)
@@ -174,7 +207,7 @@ class EmuController:
                                                                        ('%04x' % pc).upper()))
 
     def __set_code_button(self, enabled: bool):
-        self.view.execute_instr_btn.Enable(enabled)
+        self.view.tick_clock_btn.Enable(enabled)
         self.view.reset.Enable(enabled)
 
     def __refresh_cpu_flags(self):

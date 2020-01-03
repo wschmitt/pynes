@@ -12,7 +12,9 @@ class Emulator:
         self.rom = None
         self.ram = RAM(self.MEMORY_SIZE)
         self.cpu = CPU(self.cpu_read, self.cpu_write)
-        self.ppu = PPU(self.ppu_write, self.ppu_read)
+        self.ppu = PPU(self.ppu_read, self.ppu_write)
+
+        self.system_clock = 0
 
     def set_rom(self, rom: ROM):
         self.rom = rom
@@ -21,50 +23,78 @@ class Emulator:
     def has_rom(self):
         return self.rom is not None
 
-    def execute_instr(self):
+    def tick_clock(self):
+        self.ppu.clock()
+
+        if self.system_clock % 3 == 0:
+            self.cpu.clock()
+
+        self.system_clock += 1
         # read the next instruction pointed by the PC register
-        addr = self.cpu.regPC()
-        op = self.cpu_read(addr)
+        # addr = self.cpu.regPC()
+        # op = self.cpu_read(addr)
+        # 
+        # # check if op code is from a valid instructi
+        # on
+        # if op not in cpu_opcodes.opcodes:
+        #     print("No valid instruction with opcode: {0} {1}".format(hex(addr), op))
+        #     self.cpu.inc_pc()
+        #     return
+        # 
+        # # check if op code is implemented yet
+        # instr = cpu_opcodes.opcodes[op]
+        # if instr.process is None:
+        #     print("Not implemented: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
+        #     self.cpu.inc_pc(instr.size)
+        #     return
+        # 
+        # print("Instr: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
+        # # effectively executes the instruction and inc PC by the number of bytes required by the instruction
+        # # self.cpu.inc_reg_pc(instr.instr_size())
+        # self.cpu.process_instr(instr)
 
-        # check if op code is from a valid instruction
-        if op not in cpu_opcodes.opcodes:
-            print("No valid instruction with opcode: {0} {1}".format(hex(addr), op))
-            self.cpu.inc_pc()
-            return
+    # def run(self):
+    #     self.ppu.clock()
+    # 
+    #     if self.system_clock % 3 == 0:
+    #         self.cpu.clock()
+    # 
+    #     self.system_clock += 1
 
-        # check if op code is implemented yet
-        instr = cpu_opcodes.opcodes[op]
-        if instr.process is None:
-            print("Not implemented: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
-            self.cpu.inc_pc(instr.size)
-            return
+        # for i in range(0, 10):
+        #     # check if cpu is still processing the previous instruction, if so, we just skip the loop
+        #     if self.cpu.cycles == 0:
+        #         self.tick_clock()
+        #     self.cpu.cycles -= 1
 
-        print("Instr: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
-        # effectively executes the instruction and inc PC by the number of bytes required by the instruction
-        # self.cpu.inc_reg_pc(instr.instr_size())
-        self.cpu.process_instr(instr)
-
-    def run(self):
-        for i in range(0, 10):
-            # check if cpu is still processing the previous instruction, if so, we just skip the loop
-            if self.cpu.cycles == 0:
-                self.execute_instr()
-            self.cpu.cycles -= 1
-
-    # ----------------------------------- PPU BUS ADDRESSING
+    # ----------------------------------- PPU BUS ADDRESSING - 16 bits range - 0x0000 to 0xFFFF
     def ppu_write(self, addr, value):
-        pass
+        addr &= 0x3FFF
+
+        # pattern memory
+        # if addr <= 0x1FFF:
+        # return self.rom.get_chr_data(addr)  # self.ppu.tbl_pattern[int(addr >= 0x1000)][addr & 0x0FFF]
+        # elif addr <= 0x3EFF:
+        #    pass
+        # palette memory
+        if 0x3F00 <= addr <= 0x3FFF:
+            addr &= 0x001F
+            # mirroring
+            if addr == 0x0010 or addr == 0x0014 or addr == 0x0018 or addr == 0x001C:
+                addr -= 0x10
+            self.ppu.tbl_palette[addr] = value
+        return value
 
     def ppu_read(self, addr, byte=1):
         addr &= 0x3FFF
 
         # pattern memory
         if addr <= 0x1FFF:
-            return self.ppu.tbl_pattern[int(addr >= 0x1000)][addr & 0x0FFF]
+            return self.rom.get_chr_data(addr)  # self.ppu.tbl_pattern[int(addr >= 0x1000)][addr & 0x0FFF]
         elif addr <= 0x3EFF:
             pass
         # palette memory
-        elif addr <= 0x3FFF:
+        elif 0x3F00 <= addr <= 0x3FFF:
             addr &= 0x001F
             # mirroring
             if addr == 0x0010 or addr == 0x0014 or addr == 0x0018 or addr == 0x001C:
@@ -74,7 +104,7 @@ class Emulator:
     def __ppu_memory_access(self, write, addr, value, word=0):
         pass
 
-    # ----------------------------------- CPU BUS ADDRESSING
+    # ----------------------------------- CPU BUS ADDRESSING - 16 bits range - 0x0000 to 0xFFFF
     # CPU write to memory
     def cpu_write(self, addr, value):
         return self.__cpu_memory_access(True, addr, value)

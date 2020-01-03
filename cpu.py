@@ -1,4 +1,5 @@
 from enum import IntFlag, IntEnum
+import cpu_opcodes
 
 
 # CPU registers
@@ -44,6 +45,36 @@ class CPU:
     def reset(self):
         addr = self.cpu_read_func(self.reset_addr, 2)
         self.regPC(addr)
+
+    def clock(self):
+        if self.cycles <= 0:
+            instr = self.fetch_next_instr()
+            self.process_instr(instr)
+
+        self.cycles -= 1
+
+    def fetch_next_instr(self):
+        # read the next instruction pointed by the PC register
+        addr = self.regPC()
+        op = self.read(addr)
+
+        # check if op code is from a valid instruction
+        if op not in cpu_opcodes.opcodes:
+            print("No valid instruction with opcode: {0} {1}".format(hex(addr), op))
+            self.inc_pc()
+            return None
+
+        # check if op code is implemented yet
+        instr = cpu_opcodes.opcodes[op]
+        if instr.process is None:
+            print("Not implemented: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
+            self.inc_pc(instr.size)
+            return None
+
+        print("Instr: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
+        # effectively executes the instruction and inc PC by the number of bytes required by the instruction
+        # self.cpu.inc_reg_pc(instr.instr_size())
+        return instr
 
     def process_instr(self, instr):
         self.cycles = instr.cycles

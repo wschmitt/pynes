@@ -74,8 +74,7 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         glClearColor(0.1, 0.15, 0.1, 1.0)
 
-        self.screen_tex = np.random.randint(256, size=(256, 240, 3))
-        print(len(self.screen_tex))
+        self.__screen_tex = np.zeros((240, 256, 3))
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnResize)
@@ -125,7 +124,7 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         glBindTexture(GL_TEXTURE_2D, texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, self.screen_tex)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, self.__screen_tex)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0)
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -145,6 +144,16 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         if not self.init:
             self.init = True
         self.OnDraw()
+
+    def SetPixel(self, x: int, y: int, color):
+        #self.__screen_tex[239 - y][x] = color
+        pass
+
+    def SetTexture(self, tex):
+        pass
+        # for y in range(0, len(self.__screen_tex)):
+        #     for x in range(0, len(self.__screen_tex[y])):
+        #         self.SetPixel(x, y, tex[y][x])
 
     def OnDraw(self):
         glClear(GL_COLOR_BUFFER_BIT)
@@ -179,7 +188,8 @@ class EmuPanel(wx.Panel):
         self.code.Bind(wx.EVT_RIGHT_DOWN, lambda evt: self.code.SetFocus())
 
         # execute instruction button
-        self.execute_instr_btn = wx.Button(self, -1, label="Run Instruction", pos=(960, 390), size=(100, 25))
+        self.tick_clock_btn = wx.Button(self, -1, label="Tick Clock", pos=(960, 390), size=(100, 25))
+        self.execute_frame_btn = wx.Button(self, -1, label="Run Frame", pos=(960, 500), size=(100, 25))
         self.load_rom = wx.Button(self, -1, label="Load ROM", pos=(845, 390), size=(100, 25))
         self.reset = wx.Button(self, -1, label="Reset Program", pos=(660, 390), size=(100, 25))
 

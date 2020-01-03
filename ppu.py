@@ -1,4 +1,7 @@
 from enum import IntEnum, IntFlag
+
+import numpy as np
+
 import pal_color_table
 
 
@@ -32,7 +35,7 @@ class Mask(IntFlag):
 class Control(IntFlag):
     NAME_TABLE_X = (1 << 0),
     NAME_TABLE_Y = (1 << 1),
-    INCREMENT_MODE = (1 << 2),
+    INCREMENT_MODE = (1 << 2),  # define if the ppu_address is incremented by 1 or 32 (skips a NameTable entire row)
     PATTERN_SPRITE = (1 << 3),
     PATTERN_BACKGROUND = (1 << 4),
     SPRITE_SIZE = (1 << 5),
@@ -52,14 +55,20 @@ class PPU:
         self.get_mem_func = get_mem
         self.set_mem_func = set_mem
 
+        self.cycle = 0
+        self.scan_line = 0
+
         self.regs = {Reg.STATUS: 0x0, Reg.MASK: 0x0, Reg.CONTROL: 0x0}
-        print(self.regs)
+        print(self.get_flag(Reg.CONTROL, Control.INCREMENT_MODE))
 
         # ppu memories
-        self.tbl_pattern = [[] * 0x1000, [] * 0x1000]
-        self.tbl_palette = []
+        # self.tbl_pattern = [[] * 0x1000, [] * 0x1000]
+        self.tbl_name = [[0] * 0x400, [0] * 0x400]
+        self.tbl_palette = [0] * 0x20
 
-        self.sprPatternTable = [[] * 0x4000, [] * 0x4000]
+        # holds the background, foreground sprites
+        self.sprPatternTable = [[0] * 0x4000, [0] * 0x4000]
+        self.frameBuffer = np.zeros((260, 340, 3), dtype=int)
         self.pal_screen = pal_color_table.pal_screen
 
         # internal communication
@@ -69,27 +78,28 @@ class PPU:
 
     # read the chr rom to for 8x8 sprites
     def get_pattern_table(self, pattern_id: int, palette: int):
-        for tileX in range(0, 0xF):
-            for tileY in range(0, 0xF):
+        for tileX in range(0, 0x10):
+            for tileY in range(0, 0x10):
                 # each row has 16 tiles of 16 bits each (0x100)
-                offset = tileY * 0x100 + tileX * 0xF
+                offset = tileY * 0x100 + tileX * 0x10
 
                 # for each tile we got 8x8 sprite
                 for row in range(0, 8):
                     tile_lsb = self.read_mem(0x1000 * pattern_id + offset + row + 0x0)
                     tile_msb = self.read_mem(0x1000 * pattern_id + offset + row + 0x8)
                     for col in range(0, 8):
-                        pixel = (tile_lsb & 0x00000001) + ((tile_msb & 0x00000001) << 1)
+                        pixel = (tile_lsb & 0x1) + ((tile_msb & 0x1) << 1)
                         tile_lsb >>= 1
                         tile_msb >>= 1
 
                         px = tileX * 8 + (7 - col)
                         py = tileY * 8 + row
+                        # print(px, py, px + 0x80 * py, self.__get_color_from_palette(palette, pixel))
                         self.sprPatternTable[pattern_id][px + 0x80 * py] = self.__get_color_from_palette(palette, pixel)
-                break
+        return self.sprPatternTable[pattern_id]
 
     # This is a convenience function that takes a specified palette and pixel
-    # index and returns the appropriate screen colour.
+    # index and returns the appropriate screen color.
     # "0x3F00"       - Offset into PPU addressable range where palettes are stored
     # "palette << 2" - Each palette is 4 bytes in size
     # "pixel"        - Each pixel index is either 0, 1, 2 or 3
@@ -97,11 +107,30 @@ class PPU:
     def __get_color_from_palette(self, palette, pixel):
         return self.pal_screen[self.read_mem(0x3F00 + (palette << 2) + pixel) & 0x3F]
 
-    def set_flag(self, reg: Reg, flag: any, val: bool):
+    def clock(self):
+        self.__plot_pixel()
+        self.__next_pixel()
+
+    def __next_pixel(self):
+        self.cycle += 1
+        if self.cycle >= 341:
+            self.cycle = 0
+            self.scan_line += 1
+            if self.scan_line >= 261:
+                self.scan_line = -1
+                self.frame_complete = True
+
+    def __plot_pixel(self):
+        self.frameBuffer[self.scan_line][self.cycle] = [255, 255, 255]
+
+    def set_flag(self, reg: Reg, flag: IntFlag, val: bool):
         if val:
             self.regs[reg] |= flag.value
         else:
             self.regs[reg] &= ~flag.value
+
+    def get_flag(self, reg: Reg, flag: IntFlag):
+        return self.regs[reg] & flag.value
 
     def read_mem(self, addr, byte=1):
         return self.get_mem_func(addr, byte)
@@ -110,35 +139,52 @@ class PPU:
         return self.set_mem_func(addr, val)
 
     # CPU bus is accessing the PPU memory for writing
-    def cpu_write(self, addr: int, val: int):
+    def cpu_write(self, addr: int, data: int):
         addr &= 0x0007
         if addr == 0x0000:  # Control
-            self.regs[Reg.CONTROL] = val & 0xFF
+            self.regs[Reg.CONTROL] = data & 0xFF
         elif addr == 0x0001:  # Mask
-            self.regs[Reg.MASK] = val & 0xFF
+            self.regs[Reg.MASK] = data & 0xFF
         elif addr == 0x0002:  # Status
-            self.regs[Reg.STATUS] = val & 0xFF
+            self.regs[Reg.STATUS] = data & 0xFF
         elif addr == 0x0006:  # PPU Address
             if self.__addr_latch == 0:
-                self.__ppu_addr = (self.__ppu_addr & 0x00FF) | (val << 8)
+                self.__ppu_addr = (data << 8) | (self.__ppu_addr & 0x00FF)
                 self.__addr_latch = 1
             else:
-                self.__ppu_addr = (self.__ppu_addr & 0xFF00) | val
+                self.__ppu_addr = data | (self.__ppu_addr & 0xFF00)
                 self.__addr_latch = 0
-        elif addr == 0X0007:
-            pass
-        return 0
+        elif addr == 0x0007:  # PPU Data
+            self.write_mem(self.__ppu_addr, data)
+            # reading or writing PPU Data auto increment the ppu address register
+            self.__ppu_addr += 32 if self.get_flag(Reg.CONTROL, Control.INCREMENT_MODE) else 1
+
+        return data
 
     # CPU bus is accessing the PPU memory for reading
     def cpu_read(self, addr: int):
         addr &= 0x0007
+        data = 0x00
         if addr == 0x0000:  # Control
             pass
         elif addr == 0x0001:  # Mask
             pass
         elif addr == 0x0002:  # Status
+            # Todo: Remove this line, this is just a test to pass status verification
+            self.set_flag(Reg.STATUS, Status.VERTICAL_BLANK, True)
+            data = (self.regs[Reg.STATUS] & 0xE0) | (self.__ppu_data_buffer & 0x1F)
             self.set_flag(Reg.STATUS, Status.VERTICAL_BLANK, False)
             self.__addr_latch = 0
-            return (self.regs[Reg.STATUS] & 0xE0) | (self.__ppu_data_buffer & 0x1F)
+        elif addr == 0x0007:  # PPU Data
+            # Reading from NameTable is delayed by 1 cycle, so we return the old value and update buffer
+            data = self.__ppu_data_buffer
+            self.__ppu_data_buffer = self.read_mem(self.__ppu_addr)
 
-        return 0
+            # If reading from PalletsTable it doesn't get delayed (fast memory)
+            if self.__ppu_addr >= 0x3F00:
+                data = self.__ppu_data_buffer
+
+            # reading or writing PPU Data auto increment the ppu address register
+            self.__ppu_addr += 32 if self.get_flag(Reg.CONTROL, Reg.Control.INCREMENT_MODE) else 1
+
+        return data

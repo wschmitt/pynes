@@ -38,6 +38,9 @@ class ROM:
     def mem_rom_size(self):
         return len(self.pgr_rom)
 
+    def get_chr_data(self, addr: int):
+        return self.chr_rom[addr & 0x1FFF]
+
     def get(self, addr: int):
         return self.pgr_rom[addr & 0x3FFF]
 
