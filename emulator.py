@@ -30,42 +30,6 @@ class Emulator:
             self.cpu.clock()
 
         self.system_clock += 1
-        # read the next instruction pointed by the PC register
-        # addr = self.cpu.regPC()
-        # op = self.cpu_read(addr)
-        # 
-        # # check if op code is from a valid instructi
-        # on
-        # if op not in cpu_opcodes.opcodes:
-        #     print("No valid instruction with opcode: {0} {1}".format(hex(addr), op))
-        #     self.cpu.inc_pc()
-        #     return
-        # 
-        # # check if op code is implemented yet
-        # instr = cpu_opcodes.opcodes[op]
-        # if instr.process is None:
-        #     print("Not implemented: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
-        #     self.cpu.inc_pc(instr.size)
-        #     return
-        # 
-        # print("Instr: addr({0}) op({1}) mnem({2})".format(hex(addr), hex(op), instr.mnem))
-        # # effectively executes the instruction and inc PC by the number of bytes required by the instruction
-        # # self.cpu.inc_reg_pc(instr.instr_size())
-        # self.cpu.process_instr(instr)
-
-    # def run(self):
-    #     self.ppu.clock()
-    # 
-    #     if self.system_clock % 3 == 0:
-    #         self.cpu.clock()
-    # 
-    #     self.system_clock += 1
-
-        # for i in range(0, 10):
-        #     # check if cpu is still processing the previous instruction, if so, we just skip the loop
-        #     if self.cpu.cycles == 0:
-        #         self.tick_clock()
-        #     self.cpu.cycles -= 1
 
     # ----------------------------------- PPU BUS ADDRESSING - 16 bits range - 0x0000 to 0xFFFF
     def ppu_write(self, addr, value):

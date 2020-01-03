@@ -146,14 +146,12 @@ class OpenGLCanvas(glcanvas.GLCanvas):
         self.OnDraw()
 
     def SetPixel(self, x: int, y: int, color):
-        #self.__screen_tex[239 - y][x] = color
-        pass
+        self.__screen_tex[239 - y][x] = color
 
     def SetTexture(self, tex):
-        pass
-        # for y in range(0, len(self.__screen_tex)):
-        #     for x in range(0, len(self.__screen_tex[y])):
-        #         self.SetPixel(x, y, tex[y][x])
+        for y in range(0, len(self.__screen_tex)):
+            for x in range(0, len(self.__screen_tex[y])):
+                self.SetPixel(x, y, tex[y][x])
 
     def OnDraw(self):
         glClear(GL_COLOR_BUFFER_BIT)

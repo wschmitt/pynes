@@ -62,8 +62,12 @@ class EmuController:
         self.canvas.OnDraw()
 
     def __execute_frame(self, evt):
-        self.canvas.SetPixel(0, 0, [255, 255, 255])
-        self.repaint_canvas()
+        while not self.emu.ppu.frame_complete:
+            self.emu.tick_clock()
+
+        self.__update_ui()
+        # self.canvas.SetPixel(0, 0, [255, 255, 255])
+        # self.repaint_canvas()
         # for i in range(0, 100):
         #     self.emu.tick_clock()
         # self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
@@ -74,11 +78,17 @@ class EmuController:
 
     # executes the current selected instruction
     def __tick_clock(self, evt):
-        self.emu.tick_clock()
+        # keep clocking until the current instr is done executing
+        while self.emu.cpu.cycles == 0:
+            self.emu.tick_clock()
+        while self.emu.cpu.cycles > 0:
+            self.emu.tick_clock()
+
         # point selection to the next instruction
         self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
+        self.__update_ui()
 
-        # update UI
+    def __update_ui(self):
         self.update_instr_selection()
         self.__refresh_cpu_registers()
         self.__refresh_cpu_flags()

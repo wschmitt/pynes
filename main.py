@@ -4,6 +4,7 @@ import emulator
 from emulator_controller import EmuController
 from emulator_gui import EmuApp
 
+
 def main():
     emu = emulator.Emulator()
 

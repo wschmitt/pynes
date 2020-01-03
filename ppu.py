@@ -57,6 +57,7 @@ class PPU:
 
         self.cycle = 0
         self.scan_line = 0
+        self.frame_complete = False
 
         self.regs = {Reg.STATUS: 0x0, Reg.MASK: 0x0, Reg.CONTROL: 0x0}
         print(self.get_flag(Reg.CONTROL, Control.INCREMENT_MODE))
@@ -68,7 +69,7 @@ class PPU:
 
         # holds the background, foreground sprites
         self.sprPatternTable = [[0] * 0x4000, [0] * 0x4000]
-        self.frameBuffer = np.zeros((260, 340, 3), dtype=int)
+        self.frameBuffer = np.zeros((261, 341, 3), dtype=int)
         self.pal_screen = pal_color_table.pal_screen
 
         # internal communication
@@ -112,6 +113,7 @@ class PPU:
         self.__next_pixel()
 
     def __next_pixel(self):
+        self.frame_complete = False
         self.cycle += 1
         if self.cycle >= 341:
             self.cycle = 0
@@ -121,7 +123,7 @@ class PPU:
                 self.frame_complete = True
 
     def __plot_pixel(self):
-        self.frameBuffer[self.scan_line][self.cycle] = [255, 255, 255]
+        self.frameBuffer[self.scan_line][self.cycle] = np.random.randint(256, size=3)
 
     def set_flag(self, reg: Reg, flag: IntFlag, val: bool):
         if val:

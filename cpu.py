@@ -47,11 +47,11 @@ class CPU:
         self.regPC(addr)
 
     def clock(self):
-        if self.cycles <= 0:
+        if self.cycles == 0:
             instr = self.fetch_next_instr()
             self.process_instr(instr)
-
-        self.cycles -= 1
+        else:
+            self.cycles -= 1
 
     def fetch_next_instr(self):
         # read the next instruction pointed by the PC register
