@@ -1,8 +1,10 @@
 #!/usr/bin/python
+import numpy as np
+
 import emulator
 
 from emulator_controller import EmuController
-from emulator_gui import EmuApp
+from gui.main_gui import EmuApp
 
 
 def main():

@@ -8,14 +8,14 @@
         </e>
       </e>
     </e>
-    <e p="C:\Users\w2sch\.Rider2019.1\config\plugins\python-ce\helpers\python-skeletons" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\config\plugins\python-ce\helpers\typeshed\stdlib\2and3" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\config\plugins\python-ce\helpers\typeshed\stdlib\3" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\config\plugins\python-ce\helpers\typeshed\third_party\2and3" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\config\plugins\python-ce\helpers\typeshed\third_party\3" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\system\extResources" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\system\python_stubs\832998018" t="IncludeRecursive" />
-    <e p="C:\Users\w2sch\.Rider2019.1\system\resharper-host\local\Transient\ReSharperHost\v191\SolutionCaches\_.19.00" t="ExcludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\config\plugins\python-ce\helpers\python-skeletons" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\config\plugins\python-ce\helpers\typeshed\stdlib\2and3" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\config\plugins\python-ce\helpers\typeshed\stdlib\3" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\config\plugins\python-ce\helpers\typeshed\third_party\2and3" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\config\plugins\python-ce\helpers\typeshed\third_party\3" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\system\python_stubs\832998018" t="IncludeRecursive" />
+    <e p="C:\Users\w2sch\.Rider2019.3\system\resharper-host\local\Transient\ReSharperHost\v193\SolutionCaches\_.19.00" t="ExcludeRecursive" />
     <e p="C:\Users\w2sch\AppData\local\Programs\Python\Python37-32" t="IncludeRecursive">
       <e p="DLLs" t="IncludeRecursive" />
       <e p="Lib" t="IncludeRecursive" />

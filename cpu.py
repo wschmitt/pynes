@@ -1,4 +1,7 @@
 from enum import IntFlag, IntEnum
+
+import numpy as np
+
 import cpu_opcodes
 
 
@@ -49,6 +52,8 @@ class CPU:
     def clock(self):
         if self.cycles == 0:
             instr = self.fetch_next_instr()
+            if instr is None:
+                return
             self.process_instr(instr)
         else:
             self.cycles -= 1
@@ -230,7 +235,7 @@ def idy(cpu: CPU):
 
 def ADC(cpu: CPU, addr_abs: int, mode):
     value = cpu.read(addr_abs)
-    temp = cpu.regA() + value + cpu.get_flag(Flag.C)
+    temp = np.uint16(cpu.regA() + value + cpu.get_flag(Flag.C))
     cpu.set_flag(Flag.C, temp > 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
     # check overflow cases: https://youtu.be/8XmxKPJDGU0?t=2971
@@ -245,7 +250,7 @@ def ADC(cpu: CPU, addr_abs: int, mode):
 def SBC(cpu: CPU, addr_abs: int, mode):
     # invert the bottom 8 bits with bitwise xor
     value = cpu.read(addr_abs) ^ 0x00FF
-    temp = cpu.regA() + value + cpu.get_flag(Flag.C)
+    temp = np.uint16(cpu.regA() + value + cpu.get_flag(Flag.C))
     cpu.set_flag(Flag.C, temp > 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
     cpu.set_flag(Flag.V, bool((~(cpu.regA() ^ value) & (cpu.regA() ^ temp)) & 0x0080))
@@ -468,7 +473,7 @@ def CPX(cpu: CPU, addr_abs: int, mode):
 # Flags: N, C, Z
 def CPY(cpu: CPU, addr_abs: int, mode):
     value = cpu.read(addr_abs)
-    temp = cpu.regY() - value
+    temp = np.uint16(cpu.regY() - value)
     cpu.set_flag(Flag.C, cpu.regY() >= value)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
     cpu.set_flag(Flag.N, temp & 0x0080)
@@ -480,7 +485,7 @@ def CPY(cpu: CPU, addr_abs: int, mode):
 # Flags: N, Z
 def DEC(cpu: CPU, addr_abs: int, mode):
     value = cpu.read(addr_abs)
-    temp = value - 1
+    temp = np.int8(value - 1)
     cpu.write(addr_abs, temp & 0x00FF)
     cpu.set_flag(Flag.Z, (temp & 0x00FF) == 0x0000)
     cpu.set_flag(Flag.N, temp & 0x0080)
@@ -491,7 +496,7 @@ def DEC(cpu: CPU, addr_abs: int, mode):
 # Function: X = X - 1
 # Flags: N, Z
 def DEX(cpu: CPU, addr_abs: int, mode):
-    cpu.regs[Reg.X] -= 1
+    cpu.regs[Reg.X] = np.int8(cpu.regs[Reg.X] - 1)
     cpu.set_flag(Flag.Z, cpu.regX() == 0x0)
     cpu.set_flag(Flag.N, bool(cpu.regX() & 0x80))
     return 0
@@ -501,7 +506,7 @@ def DEX(cpu: CPU, addr_abs: int, mode):
 # Function: Y = Y - 1
 # Flags: N, Z
 def DEY(cpu: CPU, addr_abs: int, mode):
-    cpu.regs[Reg.Y] -= 1
+    cpu.regs[Reg.Y] = np.int8(cpu.regs[Reg.Y] - 1)
     cpu.set_flag(Flag.Z, cpu.regY() == 0x0)
     cpu.set_flag(Flag.N, bool(cpu.regY() & 0x80))
     return 0
@@ -827,7 +832,7 @@ def BRK(cpu: CPU, addr_abs: int, mode):
     cpu.stack_pt -= 1
 
     cpu.set_flag(Flag.B, True)
-    cpu.write(0x0100 + cpu.stack_pt, cpu.regP())
+    # cpu.write(0x0100 + cpu.stack_pt, cpu.regP())
     cpu.stack_pt -= 1
     cpu.set_flag(Flag.B, False)
 
