@@ -116,32 +116,21 @@ class EmuPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.canvas = OpenGLCanvas(self)
-        self.SetBackgroundColour("#626D58")
+        self.SetBackgroundColour("CADET BLUE")
 
         # execute instruction button
-        self.tick_clock_btn = wx.Button(self, -1, label="Tick Clock", pos=(960, 390), size=(100, 25))
-        self.tick_clock_qty_text = wx.TextCtrl(self, -1, value="1", pos=(960, 417), size=(100, 25))
-        self.execute_frame_btn = wx.Button(self, -1, label="Run Frame", pos=(960, 500), size=(100, 25))
-        self.reset = wx.Button(self, -1, label="Reset Program", pos=(660, 390), size=(100, 25))
+        self.reset = wx.Button(self, -1, label='Reset Program', pos=(660, 35), size=(100, 25))
 
         # main menus
-        self.load_rom = wx.Button(self, -1, label="Load ROM", pos=(660, 5), size=(100, 25))
-        self.open_chr_table_gui = wx.Button(self, -1, label="Open CHR", pos=(660, 50), size=(100, 25))
-        self.open_ram_gui = wx.Button(self, -1, label="Open RAM", pos=(660, 80), size=(100, 25))
-        self.open_cpu_gui = wx.Button(self, -1, label="Open CPU", pos=(660, 110), size=(100, 25))
-        # self.processor = wx.Button(self, -1, label="Pattern Table", pos=(760, 50), size=(100, 25))
-
-        # other buttons
-        # self.draw_pattern_table_checkbox = wx.CheckBox(self, -1, label="Draw CHR Table", pos=(660, 430), size=(100, 20))
-        # self.draw_pattern_table_checkbox.SetBackgroundColour(wx.Colour(140, 150, 155))
-        # self.draw_pattern_table_checkbox.SetValue(False)
+        self.load_rom = wx.Button(self, -1, label="Insert ROM", pos=(660, 5), size=(100, 25))
+        self.open_chr_table_gui = wx.Button(self, -1, label="Open CHR", pos=(660, 80), size=(100, 25))
+        self.open_ram_gui = wx.Button(self, -1, label="Open RAM", pos=(660, 110), size=(100, 25))
+        self.open_cpu_gui = wx.Button(self, -1, label="Open CPU", pos=(660, 140), size=(100, 25))
 
         # floating windows
-        self.chr_gui = PatternPopup(self.GetTopLevelParent(), style=wx.BORDER_RAISED)
-        self.ram_gui = RamPopup(self.GetTopLevelParent(), style=wx.BORDER_RAISED)
-        self.cpu_gui = CpuPopup(self.GetTopLevelParent(), style=wx.BORDER_RAISED)
-
-        # self.on_show_popup(None)
+        self.chr_gui = PatternPopup(self.GetTopLevelParent(), style=wx.BORDER_RAISED | wx.PU_CONTAINS_CONTROLS)
+        self.ram_gui = RamPopup(self.GetTopLevelParent(), style=wx.BORDER_RAISED | wx.PU_CONTAINS_CONTROLS)
+        self.cpu_gui = CpuPopup(self.GetTopLevelParent(), style=wx.BORDER_RAISED | wx.PU_CONTAINS_CONTROLS)
 
     def show_file_dialog(self):
         with wx.FileDialog(self, "Open ROM File", wildcard="ROM Files (*.nes)|*.nes|6502 Bytecode (*.dat)|*.dat",
@@ -154,7 +143,7 @@ class EmuPanel(wx.Panel):
 
 class EmuFrame(wx.Frame):
     def __init__(self):
-        self.size = (1280, 720)
+        self.size = (800, 647)
         wx.Frame.__init__(self, None, title="Emulator PyNes", size=self.size,
                           style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE)
         self.SetMinSize(self.size)

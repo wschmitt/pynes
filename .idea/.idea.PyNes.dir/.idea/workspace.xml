@@ -2,19 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9f603585-5825-4cef-87a2-1881e8e625b9" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/gui/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/chr_table_win_gui.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/cpu_win_gui.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/gl_utility.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/ram_win_gui.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/shaders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.PyNes.dir/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.PyNes.dir/.idea/contentModel.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.PyNes.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.PyNes.dir/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bit_utility.py" beforeDir="false" afterPath="$PROJECT_DIR$/bit_utility.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/cpu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/emulator_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/emulator_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/emulator_gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/main_gui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/chr_table_win_gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/chr_table_win_gui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/cpu_win_gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/cpu_win_gui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/main_gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/main_gui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/ram_win_gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/ram_win_gui.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,12 +57,13 @@
         <option value="$PROJECT_DIR$/gui/shaders_gui.py" />
         <option value="$PROJECT_DIR$/main.py" />
         <option value="$PROJECT_DIR$/gui/gl_utility.py" />
+        <option value="$PROJECT_DIR$/gui/pattern_table_win_gui.py" />
+        <option value="$PROJECT_DIR$/gui/shaders.py" />
+        <option value="$PROJECT_DIR$/gui/main_gui.py" />
+        <option value="$PROJECT_DIR$/gui/chr_table_win_gui.py" />
         <option value="$PROJECT_DIR$/gui/ram_win_gui.py" />
         <option value="$PROJECT_DIR$/gui/cpu_win_gui.py" />
         <option value="$PROJECT_DIR$/emulator_controller.py" />
-        <option value="$PROJECT_DIR$/gui/pattern_table_win_gui.py" />
-        <option value="$PROJECT_DIR$/gui/main_gui.py" />
-        <option value="$PROJECT_DIR$/gui/chr_table_win_gui.py" />
       </list>
     </option>
   </component>
@@ -182,6 +176,9 @@
       <workItem from="1597273804253" duration="19730000" />
       <workItem from="1597387202038" duration="5947000" />
       <workItem from="1597537609748" duration="2998000" />
+      <workItem from="1597814331655" duration="1415000" />
+      <workItem from="1598056082910" duration="17520000" />
+      <workItem from="1598107600573" duration="15632000" />
     </task>
     <servers />
   </component>
@@ -222,38 +219,42 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1254" height="466" key="DebuggerActiveHint/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597296296772" />
-    <state width="1877" height="136" key="GridCell.Tab.0.bottom" timestamp="1597400168611">
+    <state width="1877" height="202" key="GridCell.Tab.0.bottom" timestamp="1598126559423">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.0.center" timestamp="1597400168611">
+    <state width="1877" height="202" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598126559423" />
+    <state width="1877" height="202" key="GridCell.Tab.0.center" timestamp="1598126559423">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.0.center/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.0.left" timestamp="1597400168611">
+    <state width="1877" height="202" key="GridCell.Tab.0.center/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598126559423" />
+    <state width="1877" height="202" key="GridCell.Tab.0.left" timestamp="1598126559423">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.0.left/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.0.right" timestamp="1597400168611">
+    <state width="1877" height="202" key="GridCell.Tab.0.left/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598126559423" />
+    <state width="1877" height="202" key="GridCell.Tab.0.right" timestamp="1598126559423">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.0.right/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.1.bottom" timestamp="1597400168611">
+    <state width="1877" height="202" key="GridCell.Tab.0.right/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598126559423" />
+    <state width="1877" height="136" key="GridCell.Tab.1.bottom" timestamp="1598123057526">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.1.center" timestamp="1597400168611">
+    <state width="1877" height="136" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598123057526" />
+    <state width="1877" height="136" key="GridCell.Tab.1.center" timestamp="1598123057526">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.1.center/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.1.left" timestamp="1597400168611">
+    <state width="1877" height="136" key="GridCell.Tab.1.center/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598123057526" />
+    <state width="1877" height="136" key="GridCell.Tab.1.left" timestamp="1598123057526">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.1.left/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
-    <state width="1877" height="136" key="GridCell.Tab.1.right" timestamp="1597400168611">
+    <state width="1877" height="136" key="GridCell.Tab.1.left/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598123057526" />
+    <state width="1877" height="136" key="GridCell.Tab.1.right" timestamp="1598123057526">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="136" key="GridCell.Tab.1.right/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597400168611" />
+    <state width="1877" height="136" key="GridCell.Tab.1.right/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598123057526" />
+    <state x="461" y="162" key="SettingsEditor" timestamp="1598114193248">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="461" y="162" key="SettingsEditor/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598114193248" />
     <state x="665" y="135" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1596764367073">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -262,14 +263,14 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="521" y="256" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1596772638978" />
-    <state x="616" y="240" key="run.anything.popup" timestamp="1596758963845">
+    <state x="616" y="240" width="672" height="677" key="run.anything.popup" timestamp="1598061025467">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="616" y="240" key="run.anything.popup/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1596758963845" />
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1597297376620">
+    <state x="616" y="240" width="672" height="677" key="run.anything.popup/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598061025467" />
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1598114167023">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1597297376620" />
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040/1920.-206.1024.1240@0.0.1920.1040" timestamp="1598114167023" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -126,7 +126,7 @@ class PatternPopup(wx.PopupWindow):
         title.SetFont(wx.Font(16, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
         elements.append(title)
 
-        elements.append(wx.StaticText(self, -1, "PALETTE", pos=(200, 8), size=(40, 20), style=wx.ALIGN_RIGHT))
+        elements.append(wx.StaticText(self, -1, "PALETTE", pos=(190, 10), size=(50, 20), style=wx.ALIGN_RIGHT))
         self.palette_spinner = wx.SpinCtrl(self, pos=(250, 8), size=(50, 20), style=wx.BORDER_RAISED)
         self.palette_spinner.SetMax(7)
 

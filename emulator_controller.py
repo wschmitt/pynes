@@ -22,7 +22,7 @@ class EmuController:
         self.current_instr = 0
         self.current_palette = 0
 
-        self.current_clock_cycles_skip = 0
+        self.instr_to_execute = 0
 
         self.__setup_events()
         self.refresh_view()
@@ -30,8 +30,9 @@ class EmuController:
     def __setup_events(self):
         # self.view.Bind(wx.EVT_BUTTON, self.__next_page_ram, self.view.next_page_btn)
         # self.view.Bind(wx.EVT_BUTTON, self.__previous_page_ram, self.view.previous_page_btn)
-        self.view.Bind(wx.EVT_BUTTON, self.__tick_clock, self.view.tick_clock_btn)
-        self.view.Bind(wx.EVT_BUTTON, self.__execute_frame, self.view.execute_frame_btn)
+        self.view.cpu_gui.Bind(wx.EVT_BUTTON, self.__execute_next_instruction, self.view.cpu_gui.tick_clock_btn)
+        self.view.cpu_gui.Bind(wx.EVT_BUTTON, self.__execute_n_instructions, self.view.cpu_gui.tick_clock_n_btn)
+        self.view.cpu_gui.Bind(wx.EVT_BUTTON, self.__execute_frame, self.view.cpu_gui.execute_frame_btn)
         self.view.Bind(wx.EVT_BUTTON, self.__open_rom_dialog, self.view.load_rom)
 
         # POPUPS
@@ -43,10 +44,10 @@ class EmuController:
         self.view.chr_gui.Bind(wx.EVT_SPINCTRL, self.__change_chr_palette, self.view.chr_gui.palette_spinner)
         self.view.ram_gui.Bind(wx.EVT_SPINCTRL, self.__change_ram_page, self.view.ram_gui.page_spinner)
 
-        self.view.Bind(wx.EVT_TEXT, self.__on_key_typed, self.view.tick_clock_qty_text)
+        self.view.cpu_gui.Bind(wx.EVT_TEXT, self.__on_key_typed, self.view.cpu_gui.tick_clock_qty_text)
 
     def __on_key_typed(self, evt):
-        self.current_clock_cycles_skip = int(evt.GetString())
+        self.instr_to_execute = int(evt.GetString())
 
     def __change_chr_palette(self, evt):
         self.current_palette = self.view.chr_gui.palette_spinner.GetValue()
@@ -97,34 +98,38 @@ class EmuController:
         while not self.emu.ppu.frame_complete:
             self.emu.tick_clock()
 
-        self.__update_ui()
-        # self.canvas.SetPixel(0, 0, [255, 255, 255])
-        # self.repaint_canvas()
-        # for i in range(0, 100):
-        #     self.emu.tick_clock()
-        # self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
-        # self.update_instr_selection()
-        # self.__refresh_cpu_registers()
-        # self.__refresh_cpu_flags()
-        # self.__refresh_ram()
-
-    # executes the current selected instruction
-    def __tick_clock(self, evt):
-        # keep clocking until the current instr is done executing
-        skip_instr = self.current_clock_cycles_skip
-        while skip_instr > 0:
-            while self.emu.cpu.cycles == 0:
-                self.emu.tick_clock()
-            while self.emu.cpu.cycles > 0:
-                self.emu.tick_clock()
-            skip_instr -= 1
-
         # point selection to the next instruction
         if self.emu.cpu.regPC() in self.__lookup_instr_table:
             self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
 
         self.__update_ui()
+
+    def __execute_n_instructions(self, evt):
+        skip_instr = self.instr_to_execute
+        while skip_instr > 0:
+            self.__execute_instruction()
+            skip_instr -= 1
+
+        self.__update_ui()
         self.__draw_chr_table()
+
+    def __execute_next_instruction(self, evt):
+        self.__execute_instruction()
+
+        self.__update_ui()
+        self.__draw_chr_table()
+
+    # executes the current selected instruction
+    def __execute_instruction(self):
+        # this tick is a PPU tick speed, so we need to call many ticks until start the next instruction
+        while self.emu.cpu.cycles == 0:
+            self.emu.tick_clock()
+        while self.emu.cpu.cycles > 0:
+            self.emu.tick_clock()
+
+        # point selection to the next instruction
+        if self.emu.cpu.regPC() in self.__lookup_instr_table:
+            self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
 
     def __update_ui(self):
         self.update_instr_selection()
@@ -172,68 +177,59 @@ class EmuController:
                 continue
             instr = opcodes[addr]
             print(i, hex(addr), hex(pc), instr.mnem, instr.size)
-            if cpu_view.code.ItemCount <= i:
-                cpu_view.code.InsertItem(i, ('$%02x' % pc).upper())
-            else:
-                cpu_view.code.SetItem(i, ('$%02x' % pc).upper())
-            cpu_view.code.SetItem(i, 1, instr.mnem)
+            cpu_view.code_grid.AppendRows()
+            cpu_view.code_grid.SetCellValue(i + 1, 0, '$%02X' % pc)
+            cpu_view.code_grid.SetCellValue(i + 1, 1, instr.mnem)
             if instr.size == 1:
-                cpu_view.code.SetItem(i, 4, "Imp")
+                cpu_view.code_grid.SetCellValue(i + 1, 3, "IMP")
                 pc += 1
             elif instr.size == 2:
                 mem = self.emu.rom.get(pc + 1)
                 if instr.mode == cpu.imm:
-                    cpu_view.code.SetItem(i, 2, ("#$%02x" % mem).upper())
-                    cpu_view.code.SetItem(i, 4, "Imm")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "#$%02X" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "IMM")
                 elif instr.mode == cpu.zp0:
-                    cpu_view.code.SetItem(i, 2, ("$%02x" % mem).upper())
-                    cpu_view.code.SetItem(i, 4, "Zp0")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "$%02X" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "ZP0")
                 elif instr.mode == cpu.zpx:
-                    cpu_view.code.SetItem(i, 2, ("$%02x" % mem).upper())
-                    cpu_view.code.SetItem(i, 3, "X")
-                    cpu_view.code.SetItem(i, 4, "ZpX")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "$%02X, X" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "ZPX")
                 elif instr.mode == cpu.zpy:
-                    cpu_view.code.SetItem(i, 2, ("$%02x" % mem).upper())
-                    cpu_view.code.SetItem(i, 3, "Y")
-                    cpu_view.code.SetItem(i, 4, "ZpY")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "$%02X, Y" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "ZPY")
                 elif instr.mode == cpu.idx:
-                    cpu_view.code.SetItem(i, 2, ("($%02x," % mem).upper())
-                    cpu_view.code.SetItem(i, 3, "X)")
-                    cpu_view.code.SetItem(i, 4, "IdX")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "($%02X, X)" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "IDX")
                 elif instr.mode == cpu.idy:
-                    cpu_view.code.SetItem(i, 2, ("($%02x)" % mem).upper())
-                    cpu_view.code.SetItem(i, 3, "Y")
-                    cpu_view.code.SetItem(i, 4, "IdY")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "($%02X), Y" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "IDY")
                 elif instr.mode == cpu.rel:
-                    cpu_view.code.SetItem(i, 2, ("$%02x" % mem).upper())
-                    cpu_view.code.SetItem(i, 4, "Rel")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, "$%02X" % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "REL")
                 pc += 2
             elif instr.size == 3:
                 mem = self.emu.rom.get_word(pc + 1)
                 if instr.mode == cpu.abs:
                     # uses two bytes as addressing ex: JMP $4032
-                    cpu_view.code.SetItem(i, 2, ('$%04x' % mem).upper())
-                    cpu_view.code.SetItem(i, 4, "Abs")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, '$%04X' % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "ABS")
                 elif instr.mode == cpu.abx:
-                    cpu_view.code.SetItem(i, 2, ('$%04x' % mem).upper())
-                    cpu_view.code.SetItem(i, 3, "X")
-                    cpu_view.code.SetItem(i, 4, "AbX")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, '$%04X, X' % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "ABX")
                 elif instr.mode == cpu.aby:
-                    cpu_view.code.SetItem(i, 2, ('$%04x' % mem).upper())
-                    cpu_view.code.SetItem(i, 3, "Y")
-                    cpu_view.code.SetItem(i, 4, "AbY")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, '$%04X, Y' % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "ABY")
                 elif instr.mode == cpu.ind:
-                    cpu_view.code.SetItem(i, 2, ('($%04x)' % mem).upper())
-                    cpu_view.code.SetItem(i, 4, "Ind")
+                    cpu_view.code_grid.SetCellValue(i + 1, 2, '($%04X)' % mem)
+                    cpu_view.code_grid.SetCellValue(i + 1, 3, "IND")
                 pc += 3
 
         self.current_instr = self.__lookup_instr_table[self.emu.cpu.regPC()]
         self.update_instr_selection()
 
     def update_instr_selection(self):
-        self.view.cpu_gui.code.SetFocus()
-        self.view.cpu_gui.code.Select(self.current_instr, 1)
-        self.view.cpu_gui.code.EnsureVisible(self.view.cpu_gui.code.GetFirstSelected())
+        # Todo: Check a way for auto scrolling to the selected row
+        self.view.cpu_gui.code_grid.SelectRow(self.current_instr + 1)
 
     def refresh_view(self):
         self.__refresh_ram()
@@ -250,14 +246,16 @@ class EmuController:
         x = self.emu.cpu.regX()
         y = self.emu.cpu.regY()
         pc = self.emu.cpu.regPC()
-        self.view.cpu_gui.cpu_registers.SetLabelText(
-            "[X: ${0}]    [Y: ${1}]    [A: ${2}]    [PC: ${3}]".format('%02x' % x, '%02x' % y, '%02x' % a,
-                                                                       ('%04x' % pc).upper()))
+        self.view.cpu_gui.set_registers(x, y, a, pc)
 
     def __set_code_button(self, enabled: bool):
-        self.view.tick_clock_btn.Enable(enabled)
         self.view.reset.Enable(enabled)
         self.view.open_chr_table_gui.Enable(enabled)
+
+        self.view.cpu_gui.tick_clock_btn.Enable(enabled)
+        self.view.cpu_gui.tick_clock_n_btn.Enable(enabled)
+        self.view.cpu_gui.tick_clock_address_btn.Enable(enabled)
+        self.view.cpu_gui.execute_frame_btn.Enable(enabled)
 
     def __refresh_cpu_flags(self):
         from cpu import Flag
@@ -269,9 +267,8 @@ class EmuController:
         u = int(self.emu.cpu.get_flag(Flag.U))
         v = int(self.emu.cpu.get_flag(Flag.V))
         n = int(self.emu.cpu.get_flag(Flag.N))
-        self.view.cpu_gui.cpu_flags.SetLabelText(
-            "[C: {0}]   [Z: {1}]   [I: {2}]   [D: {3}]   [B: {4}]   [U: {5}]   [V: {6}]   [N: {7}]".
-                format(c, z, i, d, b, u, v, n))
+
+        self.view.cpu_gui.set_flags(c, z, i, d, b, u, v, n)
 
     def __open_rom_dialog(self, evt):
         path = self.view.show_file_dialog()

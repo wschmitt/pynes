@@ -43,21 +43,14 @@ class RamPopup(wx.PopupWindow):
         self.ram_grid.HideRowLabels()
         self.ram_grid.HideColLabels()
 
-        # mygrid.SetCellValue(1, 1, "Hello")
-        # mygrid.SetCellFont(1, 1, wx.Font(15, wx.ROMAN, wx.ITALIC, wx.NORMAL))
-
-        # self.ram_grid.SetCellValue(5, 5, "$AF")
-        # self.ram_grid.SetCellBackgroundColour(5, 5, wx.RED)
-        # self.ram_grid.SetCellTextColour(5, 5, wx.WHITE)
-
-        # self.ram_grid.SetCellValue(8, 3, "$00")
-        # self.ram_grid.SetReadOnly(8, 3, True)
-
-        # self.ram_grid.SetCellEditor(6, 0, grid.GridCellNumberEditor(1, 20))
-        # self.ram_grid.SetCellValue(6, 0, "$10")
-
         self.ram_grid.EnableScrolling(False, False)
         self.ram_grid.ShowScrollbars(False, False)
+
+        self.ram_grid.DisableDragColSize()
+        self.ram_grid.DisableDragRowSize()
+        self.ram_grid.DisableDragGridSize()
+
+        self.ram_grid.EnableEditing(False)
 
         self.normal_font = self.ram_grid.GetFont()
         self.bold_font = self.normal_font.Bold()
